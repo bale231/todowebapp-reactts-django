@@ -290,7 +290,7 @@ class SendResetPasswordEmailView(LoginRequiredMixin, View):
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
 
-        frontend_url = f"http://localhost:5173/reset-password/{uid}/{token}"
+        frontend_url = f"https://todowebapp-frontend-reactts-stml.vercel.app/reset-password/{uid}/{token}"
 
         # Dentro la tua view
         subject = "Cambio password"
@@ -348,7 +348,7 @@ class SendEmailVerificationView(View):
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         token = default_token_generator.make_token(user)
 
-        verify_url = f"http://localhost:5173/verify-email/{uid}/{token}"
+        verify_url = f"https://todowebapp-frontend-reactts-stml.vercel.app/verify-email/{uid}/{token}"
 
         context = {
             "title": "Verifica la tua email",
@@ -450,7 +450,7 @@ class LoginView(View):
         if not user.is_active:
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             token = default_token_generator.make_token(user)
-            verify_url = f"http://localhost:5173/verify-email/{uid}/{token}"
+            verify_url = f"https://todowebapp-frontend-reactts-stml.vercel.app/verify-email/{uid}/{token}"
 
             context = {
                 "title": "Verifica la tua email",
