@@ -39,21 +39,6 @@ class CurrentUserView(LoginRequiredMixin, View):
             'email_verified': profile.email_verified if profile else False
         })
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ### VIEW TODOS
 
 ## VIEW GET ALL CATEGORIES
@@ -319,7 +304,7 @@ class SendResetPasswordEmailView(LoginRequiredMixin, View):
             "action_text": "Cambia la password",
             "title": "Hai richiesto di cambiare la password?",
             "message": "Se non sei stato tu a farlo, ignora questa email.",
-            "year": datetime.now().year  # 👈 aggiungi questo
+            "year": datetime.now().year
         }
 
         html_content = render_to_string("emails/email.html", context)
@@ -327,7 +312,7 @@ class SendResetPasswordEmailView(LoginRequiredMixin, View):
         email = EmailMultiAlternatives(
             subject,
             "",
-            "todoprovider@webdesign-vito-luigi.it",  # solo la mail qui
+            "todoprovider@webdesign-vito-luigi.it",
             [to_email]
         )
         email.extra_headers = {"From": "ToDoWebApp Bale <todoprovider@webdesign-vito-luigi.it>"}
