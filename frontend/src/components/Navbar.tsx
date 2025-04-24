@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useState, useRef, useEffect } from "react";
 import gsap from "gsap";
 import { Sun, Moon } from "lucide-react";
-import { updateTheme, getCurrentUser } from "../api/auth";
+import { updateTheme, getCurrentUserJWT } from "../api/auth";
 
 interface NavbarProps {
   username?: string;
@@ -13,7 +13,7 @@ function ThemeToggle() {
 
   useEffect(() => {
     const init = async () => {
-      const user = await getCurrentUser();
+      const user = await getCurrentUserJWT();
       if (user?.theme === "dark") {
         document.documentElement.classList.add("dark");
         setDarkMode(true);
@@ -92,7 +92,7 @@ export default function Navbar({ username }: NavbarProps) {
         className="text-xl font-bold text-blue-600 dark:text-blue-400"
       >
         <img
-          src="../../src/assets/logo-todoapp.png"
+          src="https://webdesign-vito-luigi.it/appIcon/logo-todoapp.png"
           alt="ToDoApp Logo"
           width={300}
         />

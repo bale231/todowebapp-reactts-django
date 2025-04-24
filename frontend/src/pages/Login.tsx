@@ -1,20 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { login } from "../api/auth";
+import { login, getCurrentUserJWT } from "../api/auth";
 import gsap from "gsap";
 import { Eye, EyeOff } from "lucide-react";
 
 export default function Login() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const errorRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
 
-  const formRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {  
+  useEffect(() => {
     if (formRef.current) {
       gsap.fromTo(
         formRef.current,
@@ -22,7 +22,7 @@ export default function Login() {
         { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }
       );
     }
-  }, []);  
+  }, []);
 
   useEffect(() => {
     if (error && errorRef.current) {
@@ -35,42 +35,41 @@ export default function Login() {
   }, [error]);
 
   const handleLogin = async () => {
-    if (!username || !password) {
-      setError("Inserisci username e password.");
-      return;
-    }
-  
-    const res = await login(username, password);
-  
-    if (res.status === 200 && res.message === "login success") {
-      setError("");
-      navigate("/");
-    } else if (res.status === 403) {
-      setError("Conferma l'account email prima di proseguire.");
+    setIsLoading(true);
+    setError("");
+
+    const result = await login(username, password);
+
+    if (result.success) {
+      const user = await getCurrentUserJWT();
+      if (user) {
+        console.log("Utente loggato:", user);
+        navigate("/"); // Oppure imposta utente globale se hai un context
+      } else {
+        setError("Errore nel recupero dati utente");
+      }
     } else {
-      setError("Credenziali errate. Riprova.");
+      setError(result.message);
     }
-  };  
+
+    setIsLoading(false);
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div
-        ref={formRef}
-        className="p-6 rounded-xl w-full max-w-sm"
-      >
+      <div ref={formRef} className="p-6 rounded-xl w-full max-w-sm">
         <h2 className="text-2xl font-bold mb-6 text-center text-gray-900">
           Login
         </h2>
 
         {error && (
-          <div 
+          <div
             ref={errorRef}
             className="bg-red-100 text-red-700 px-4 py-2 rounded mb-4 text-sm border border-red-400"
           >
             {error}
           </div>
         )}
-
 
         <div className="relative w-full mb-4">
           <input
@@ -113,10 +112,16 @@ export default function Login() {
         </div>
 
         <button
+          type="submit"
+          disabled={isLoading}
           onClick={handleLogin}
-          className="w-full py-2 rounded border border-blue-600 text-white bg-blue-600 hover:bg-transparent hover:text-blue-600 transition-colors duration-300"
+          className={`w-full py-2 rounded ${
+            isLoading
+              ? "bg-gray-400 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700"
+          } text-white font-semibold`}
         >
-          Login
+          {isLoading ? "Attendi..." : "Accedi"}
         </button>
 
         <p className="text-sm text-center mt-4 text-gray-700">

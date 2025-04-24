@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { getCurrentUser } from "../api/auth";
+import { getCurrentUserJWT } from "../api/auth";
 import Navbar from "../components/Navbar";
 import gsap from "gsap";
 import { Plus, Pencil, ListFilter, Trash, Edit } from "lucide-react";
 import { Link } from "react-router-dom";
+import { fetchAllLists, editList, deleteList } from "../api/todos";
 
 interface TodoList {
   id: number;
@@ -56,7 +57,7 @@ export default function Home() {
 
   useEffect(() => {
     if (themeLoaded) {
-      getCurrentUser().then((res) => {
+      getCurrentUserJWT().then((res) => {
         if (!res) navigate("/login");
         else setUser(res);
       });
@@ -101,45 +102,44 @@ export default function Home() {
   }, [sortOption]);
 
   const fetchLists = async () => {
-    const res = await fetch("https://bale231.pythonanywhere.com/api/lists/", {
-      credentials: "include",
-    });
-    const data = await res.json();
-    setLists(data);
+    try {
+      const data = await fetchAllLists();
+      if (Array.isArray(data)) {
+        setLists(data);
+      } else {
+        console.error("Formato risposta non valido:", data);
+      }
+    } catch (err) {
+      console.error("Errore nel caricamento liste:", err);
+    }
   };
 
+  const API_URL = "https://bale231.pythonanywhere.com/api";
   const handleCreateList = async () => {
     if (!newListName.trim()) return;
-    const payload = {
-      name: newListName,
-      color: newListColor,
-    };
-
+  
     if (editListId !== null) {
-      const res = await fetch(
-        `https://bale231.pythonanywhere.com/api/lists/${editListId}/`,
-        {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(payload),
-        }
-      );
-      if (res.ok) fetchLists();
+      // ✅ MODIFICA LISTA
+      await editList(editListId, newListName, newListColor);
       setEditListId(null);
     } else {
-      const res = await fetch("https://bale231.pythonanywhere.com/api/lists/", {
+      // ✅ CREA LISTA
+      const res = await fetch(`${API_URL}/lists/`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload),
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("accessToken") || ""}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name: newListName, color: newListColor }),
       });
-      if (res.ok) fetchLists();
+      if (!res.ok) console.error("Errore creazione lista");
     }
-
+  
+    fetchLists();
     setNewListName("");
     setShowForm(false);
   };
+  
 
   const handleEditList = (list: TodoList) => {
     setEditListId(list.id);
@@ -148,28 +148,26 @@ export default function Home() {
     setShowForm(true);
   };
 
-  const handleDeleteList = async (id: number) => {
-    gsap.fromTo(
-      `#card-${id}`,
-      { x: -5 },
-      {
-        x: 5,
-        repeat: 3,
-        yoyo: true,
-        duration: 0.1,
-        onComplete: () => {
-          (async () => {
-            await fetch(`https://bale231.pythonanywhere.com/api/lists/${id}/`, {
-              method: "DELETE",
-              credentials: "include",
-            });
-            fetchLists();
-            setShowDeleteConfirm(null);
-          })();
-        }        
-      }
-    );
-  };
+const handleDeleteList = async (id: number) => {
+  gsap.fromTo(
+    `#card-${id}`,
+    { x: -5 },
+    {
+      x: 5,
+      repeat: 3,
+      yoyo: true,
+      duration: 0.1,
+      onComplete: () => {
+        (async () => {
+          await deleteList(id);
+          fetchLists();
+          setShowDeleteConfirm(null);
+        })();
+      }      
+    }
+  );
+};
+
 
   const sortedLists = [...lists].sort((a, b) => {
     if (sortOption === "name") {
@@ -204,7 +202,7 @@ export default function Home() {
           id="list-wrapper"
           className="mt-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
         >
-          {sortedLists.map((list) => {
+          {Array.isArray(sortedLists) && sortedLists.map((list) => {
             const completed = list.todos.filter((t) => t.completed).length;
             const pending = list.todos.length - completed;
 
